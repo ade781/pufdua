@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/* Taruh komponen kustom di layer components */
+@layer components {
+  .container-narrow {
+    @apply max-w-3xl mx-auto px-4;
+  }
+
+  .card {
+    @apply bg-white/80 backdrop-blur border border-white/40 shadow-lg rounded-2xl;
+  }
+
+  /* Base button */
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition active:scale-95;
+  }
+
+  /* Variant JANGAN @apply .btn (bukan utilitas). Tambah utilitasnya saja. */
+  .btn-primary {
+    @apply bg-purple-600 text-white hover:bg-purple-700;
+  }
+
+  .btn-ghost {
+    @apply bg-white/70 hover:bg-white;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700;
+  }
+}
+
+/* gaya global biar langsung kelihatan */
+:root {
+  --brand: #9333ea;
+}
+
+body {
+  @apply bg-gradient-to-b from-pink-50 to-purple-50 text-gray-900;
+}
