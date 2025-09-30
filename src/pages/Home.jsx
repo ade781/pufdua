@@ -244,7 +244,7 @@ const caseFiles = [
   { date: 'Nov 2023', title: 'First Contact', note: 'Percakapan santai, efeknya tidak santai.', photo: 'img2.jpg' },
   { date: 'Mar 2024', title: 'Midnight Pact', note: 'Janji simple yang tetap hidup.', photo: 'img3.jpg' },
   { date: 'Sep 2024', title: 'Stress Test', note: 'Badai lewat, kru tetap utuh.', photo: 'img4.jpg' },
-  { date: 'Hari Ini', title: 'Birthday Heist', note: 'Semua perangkat untuk FIKA.', photo: 'img5.jpg' },
+  { date: 'Hari Ini', title: 'Birthday Heist', note: 'Semua perangkat untuk FIKA.', photo: 'img5.JPG' },
 ];
 
 const gifts = [
@@ -453,7 +453,7 @@ const WantedPoster = () => (
         <p className="text-white/70">Hadiah: potongan kue tambahan untuk setiap senyuman FIKA malam ini.</p>
       </div>
       <div className="grid md:grid-cols-3 gap-6">
-        {['img6.jpg', 'img7.jpg', 'img8.jpg'].map((src, i) => (
+        {['img6.JPG', 'img7.JPG', 'img8.png'].map((src, i) => (
           <div key={i} className="glass rounded-xl p-4 text-center">
             <div className="text-xs text-white/40">POSTER #{i + 1}</div>
             <img src={src} onError={(e) => { e.currentTarget.src = `https://placehold.co/600x800/0b0a0f/ffffff?text=FIKA+${i + 1}` }} alt="poster" className="w-full aspect-[3/4] object-cover rounded mt-2 tilt" />
