@@ -1,0 +1,988 @@
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+
+/* ===================================================================================
+   🎁 ULANGTAHUN FIKA - EDISI "KERAJAAN LAMPION DELUXE"
+   - Fitur baru:
+     1) Countdown sinematik dengan detik nyata dan gradient ring.
+     2) Header typewriter + sparkles.
+     3) Parallax multi-lapis + lampion melayang + bintang berkedip.
+     4) Galeri Masonry + hover parallax, lightbox, keyboard navigation.
+     5) Kembang api (kanvas) otomatis malam hari + tombol manual.
+     6) Confetti pada momen tertentu (misal jam 00:00).
+     7) Audio player + visualizer bar.
+     8) Guestbook ucapan (localStorage) + ekspor .json.
+     9) Mode “Zen Performance” untuk device lemah (matikan efek berat).
+    10) Aksesibilitas: skip-to-content, fokus ring, ARIA live regions.
+   - Tetap Satu File. Tailwind friendly.
+   =================================================================================== */
+
+/* ===================================================================================
+   ✨ ICONS (SVG) - diseragamkan agar mudah di-override
+   =================================================================================== */
+const LanternIcon = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M16 2H8C6.9 2 6 2.9 6 4v1H4.5C4.22 5 4 5.22 4 5.5s.22.5.5.5H6v10H4.5c-.28 0-.5.22-.5.5s.22.5.5.5H6v1c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-1h1.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5H18V5h1.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5H18V4c0-1.1-.9-2-2-2zm-2 15h-4v-1h4v1zm0-3h-4v-1h4v1zm0-3h-4V8h4v3z" />
+  </svg>
+);
+
+const CrownIcon = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 2l2.35 7.16h7.65l-6.18 4.48 2.36 7.16-6.18-4.48-6.18 4.48 2.36-7.16-6.18-4.48h7.65L12 2z" />
+  </svg>
+);
+
+const StarIcon = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+  </svg>
+);
+
+const SparkleIcon = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2zM4 16l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3zM20 14l.75 2.25L23 17l-2.25.75L20 20l-.75-2.25L17 17l2.25-.75L20 14z" />
+  </svg>
+);
+
+/* ===================================================================================
+   🧩 UTILITIES
+   =================================================================================== */
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+const pad2 = n => n.toString().padStart(2, "0");
+const isNight = () => {
+  const h = new Date().getHours();
+  return h >= 18 || h <= 5;
+};
+
+function useOnScreen(options) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const ob = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setVisible(true);
+        ob.unobserve(entry.target);
+      }
+    }, options || { threshold: 0.1 });
+    if (ref.current) ob.observe(ref.current);
+    return () => ob.disconnect();
+  }, [options]);
+  return [ref, visible];
+}
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(mq.matches);
+    const handler = e => setReduced(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return reduced;
+}
+
+/* ===================================================================================
+   🎼 AUDIO: PLAYER + VISUALIZER BAR
+   =================================================================================== */
+function AudioPlayer() {
+  const audioRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [ctxState, setCtxState] = useState(null);
+  const reduced = usePrefersReducedMotion();
+
+  useEffect(() => {
+    if (reduced) return;
+    let raf = 0;
+    let audioCtx, analyser, src, dataArray, bufferLength;
+    function setup() {
+      if (ctxState) return;
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 128;
+        bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        const el = audioRef.current;
+        src = audioCtx.createMediaElementSource(el);
+        src.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        setCtxState({ audioCtx, analyser, src, dataArray, bufferLength });
+      } catch {
+        // ya sudahlah.
+      }
+    }
+    setup();
+
+    const canvas = canvasRef.current;
+    const c = canvas?.getContext("2d");
+    function draw() {
+      if (!c || !ctxState) { raf = requestAnimationFrame(draw); return; }
+      const { analyser, dataArray, bufferLength } = ctxState;
+      analyser.getByteFrequencyData(dataArray);
+      const w = canvas.width = 220;
+      const h = canvas.height = 44;
+      c.clearRect(0, 0, w, h);
+      const bars = 22;
+      const barW = (w / bars) * 0.7;
+      const gap = (w / bars) * 0.3;
+      for (let i = 0; i < bars; i++) {
+        const idx = Math.floor(i * (bufferLength / bars));
+        const v = dataArray[idx] || 0;
+        const barH = (v / 255) * h;
+        c.globalAlpha = 0.8;
+        c.fillStyle = "#FCD34D";
+        c.fillRect(i * (barW + gap), h - barH, barW, barH);
+        c.globalAlpha = 0.25;
+        c.fillStyle = "#fff";
+        c.fillRect(i * (barW + gap), h - 2, barW, 2);
+      }
+      raf = requestAnimationFrame(draw);
+    }
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+  }, [ctxState, reduced]);
+
+  const toggle = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (!isPlaying) {
+      el.play().catch(() => { });
+      setIsPlaying(true);
+    } else {
+      el.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  return (
+    <div className="fixed bottom-5 right-5 z-[100] select-none">
+      <div className="flex items-center gap-3 bg-gray-900/60 backdrop-blur-lg border border-yellow-400/20 rounded-full px-3 py-2 shadow-2xl">
+        <audio
+          ref={audioRef}
+          src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+          loop
+          preload="none"
+        />
+        <button
+          onClick={toggle}
+          aria-label={isPlaying ? "Pause music" : "Play music"}
+          className="w-11 h-11 rounded-full bg-yellow-500/90 hover:bg-yellow-400 text-gray-900 grid place-items-center transition-all duration-300 text-xl font-mono focus:outline-none focus:ring-2 focus:ring-yellow-300"
+        >
+          {isPlaying ? "❚❚" : "►"}
+        </button>
+        <canvas ref={canvasRef} className="rounded-md" aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
+
+/* ===================================================================================
+   🌌 PARALLAX BACKGROUND + LAMPION
+   =================================================================================== */
+function FloatingLanterns({ count = 16, disabled }) {
+  const seeds = useMemo(() => Array.from({ length: count }, (_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    delay: Math.random() * 20,
+    dur: 18 + Math.random() * 22,
+    scale: 0.25 + Math.random() * 0.55,
+  })), [count]);
+
+  if (disabled) return null;
+  return (
+    <div className="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+      {seeds.map(s => (
+        <div key={s.id} className="lantern-bg"
+          style={{
+            left: `${s.left}%`,
+            animationDuration: `${s.dur}s`,
+            animationDelay: `${s.delay}s`,
+            transform: `scale(${s.scale})`
+          }} />
+      ))}
+    </div>
+  );
+}
+
+function ParallaxBackground({ disabled }) {
+  const [y, setY] = useState(0);
+  useEffect(() => {
+    if (disabled) return;
+    const onScroll = () => setY(window.pageYOffset || 0);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [disabled]);
+
+  return (
+    <div className="fixed top-0 left-0 w-full h-full -z-20 pointer-events-none">
+      <div className="absolute inset-0 bg-night-sky" />
+      <div className="absolute inset-0 bg-stars"
+        style={{ transform: `translateY(${y * 0.1}px)` }} />
+      <div className="absolute bottom-0 left-0 w-full h-1/2 bg-mountains"
+        style={{ transform: `translateY(${y * 0.3}px)` }} />
+      <div className="absolute bottom-0 left-0 w-full h-1/3 bg-castle"
+        style={{ transform: `translateY(${y * 0.4}px)` }} />
+    </div>
+  );
+}
+
+/* ===================================================================================
+   🔥 FIREWORKS + CONFETTI (Canvas)
+   =================================================================================== */
+function useCanvasSize(ref) {
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    function handle() {
+      const el = ref.current;
+      if (!el) return;
+      setSize({ w: el.clientWidth, h: el.clientHeight });
+    }
+    handle();
+    window.addEventListener("resize", handle);
+    const id = setInterval(handle, 500);
+    return () => {
+      window.removeEventListener("resize", handle);
+      clearInterval(id);
+    };
+  }, [ref]);
+  return size;
+}
+
+function FireworksLayer({ enabled }) {
+  const wrapRef = useRef(null);
+  const canvasRef = useRef(null);
+  const { w, h } = useCanvasSize(wrapRef);
+  const reduced = usePrefersReducedMotion();
+  useEffect(() => {
+    if (!enabled || reduced) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let raf = 0;
+    let particles = [];
+    let last = 0;
+
+    function spawn(x, y, hue = Math.random() * 360) {
+      const count = 80;
+      for (let i = 0; i < count; i++) {
+        const a = (Math.PI * 2 * i) / count + Math.random() * 0.2;
+        const speed = 1 + Math.random() * 4;
+        particles.push({
+          x, y,
+          vx: Math.cos(a) * speed,
+          vy: Math.sin(a) * speed,
+          life: 60 + Math.random() * 40,
+          hue: hue + Math.random() * 20 - 10
+        });
+      }
+    }
+
+    function tick(t) {
+      raf = requestAnimationFrame(tick);
+      if (!last) last = t;
+      const dt = Math.min(33, t - last);
+      last = t;
+
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = "rgba(10,5,20,0.25)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = "lighter";
+
+      if (Math.random() < 0.04) {
+        spawn(Math.random() * canvas.width, Math.random() * canvas.height * 0.6 + 40);
+      }
+
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.02; // gravity tipis
+        p.life -= dt * 0.06;
+      });
+      particles = particles.filter(p => p.life > 0);
+      for (const p of particles) {
+        const alpha = clamp(p.life / 60, 0, 1);
+        ctx.beginPath();
+        ctx.fillStyle = `hsla(${p.hue}, 80%, 60%, ${alpha})`;
+        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [enabled, reduced, w, h]);
+
+  return (
+    <div ref={wrapRef} className="pointer-events-none fixed inset-0 -z-5">
+      <canvas ref={canvasRef} width={w} height={h} />
+    </div>
+  );
+}
+
+function ConfettiBurst({ trigger }) {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    if (!trigger) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let id = 0;
+    let particles = [];
+    const { width, height } = canvas;
+
+    for (let i = 0; i < 180; i++) {
+      particles.push({
+        x: width / 2, y: height / 2,
+        vx: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.5) * 6 - 2,
+        color: `hsl(${Math.random() * 360},90%,60%)`,
+        life: 120 + Math.random() * 80,
+        size: 2 + Math.random() * 3
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.05;
+        p.life--;
+      });
+      particles = particles.filter(p => p.life > 0);
+      for (const p of particles) {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+      }
+      if (particles.length > 0) id = requestAnimationFrame(draw);
+    }
+    draw();
+
+    return () => cancelAnimationFrame(id);
+  }, [trigger]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none"
+      width={typeof window !== "undefined" ? window.innerWidth : 800}
+      height={typeof window !== "undefined" ? window.innerHeight : 600}
+    />
+  );
+}
+
+/* ===================================================================================
+   🕰️ COUNTDOWN SINEMATIK
+   =================================================================================== */
+function diffTo(targetIso) {
+  const target = new Date(targetIso);
+  const now = new Date();
+  const ms = target - now;
+  if (ms <= 0) return { d: 0, h: 0, m: 0, s: 0, ms: 0, done: true };
+  const d = Math.floor(ms / 86400000);
+  const h = Math.floor((ms % 86400000) / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return { d, h, m, s, ms, done: false };
+}
+
+function Ring({ value, max, label }) {
+  const r = 44;
+  const c = 2 * Math.PI * r;
+  const pct = clamp(1 - value / max, 0, 1);
+  const dash = c * pct;
+  return (
+    <div className="flex flex-col items-center">
+      <svg viewBox="0 0 100 100" className="w-28 h-28">
+        <circle cx="50" cy="50" r={r} stroke="rgba(255,255,255,0.15)" strokeWidth="8" fill="none" />
+        <circle cx="50" cy="50" r={r} stroke="#FBBF24" strokeWidth="8" fill="none"
+          strokeDasharray={`${dash} ${c}`} strokeLinecap="round"
+          style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%" }} />
+        <text x="50" y="53" textAnchor="middle" fontSize="22" fill="#fff" fontWeight="700">{pad2(value)}</text>
+      </svg>
+      <div className="mt-2 text-yellow-300/80">{label}</div>
+    </div>
+  );
+}
+
+function Countdown({ target = "2025-10-05T00:00:00+07:00", onDone }) {
+  const [t, setT] = useState(diffTo(target));
+  useEffect(() => {
+    let id = 0;
+    function loop() {
+      setT(diffTo(target));
+      id = requestAnimationFrame(loop);
+    }
+    id = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(id);
+  }, [target]);
+
+  useEffect(() => {
+    if (t.done && onDone) onDone();
+  }, [t.done, onDone]);
+
+  return (
+    <section aria-label="Countdown" className="relative">
+      <div className="flex items-center justify-center gap-6 md:gap-10 flex-wrap">
+        <Ring value={t.d} max={99} label="Hari" />
+        <Ring value={t.h} max={24} label="Jam" />
+        <Ring value={t.m} max={60} label="Menit" />
+        <Ring value={t.s} max={60} label="Detik" />
+      </div>
+      <p className="text-center mt-4 text-yellow-200/70 text-sm">Hitung mundur menuju detik sakral perayaan.</p>
+    </section>
+  );
+}
+
+/* ===================================================================================
+   ✍️ TYPEWRITER + SPARKLES
+   =================================================================================== */
+function Typewriter({ words, speed = 70, pause = 1600 }) {
+  const [i, setI] = useState(0);
+  const [text, setText] = useState("");
+  const [del, setDel] = useState(false);
+
+  useEffect(() => {
+    let id = 0;
+    function step() {
+      const word = words[i % words.length];
+      if (!del) {
+        setText(prev => {
+          const next = word.slice(0, prev.length + 1);
+          if (next === word) {
+            setTimeout(() => setDel(true), pause);
+          }
+          return next;
+        });
+      } else {
+        setText(prev => {
+          const next = prev.slice(0, -1);
+          if (next.length === 0) {
+            setDel(false);
+            setI(i => i + 1);
+          }
+          return next;
+        });
+      }
+      id = setTimeout(step, speed);
+    }
+    id = setTimeout(step, speed);
+    return () => clearTimeout(id);
+  }, [del, i, words, speed, pause]);
+
+  return (
+    <span aria-live="polite" className="relative">
+      {text}
+      <span className="inline-block w-[2px] h-[1em] bg-yellow-300 ml-1 animate-pulse" />
+    </span>
+  );
+}
+
+function SparklesRow() {
+  return (
+    <div className="flex gap-2 items-center justify-center text-yellow-300/90">
+      <SparkleIcon className="w-5 h-5" />
+      <SparkleIcon className="w-6 h-6" />
+      <SparkleIcon className="w-5 h-5" />
+    </div>
+  );
+}
+
+/* ===================================================================================
+   🧱 ANIMATED SECTION (fade-in on view)
+   =================================================================================== */
+function AnimatedSection({ children, className = "" }) {
+  const [ref, visible] = useOnScreen({ threshold: 0.1 });
+  return (
+    <section
+      ref={ref}
+      className={`transition-all duration-1000 ease-out will-change-transform ${className} ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+    >
+      {children}
+    </section>
+  );
+}
+
+/* ===================================================================================
+   🖼️ GALLERY: Masonry, hover parallax, lightbox, keyboard nav
+   =================================================================================== */
+const galleryImages = [
+  'img6.jpg', 'img7.jpg', 'img8.jpg', 'img9.jpg',
+  'img10.jpg', 'img11.jpg', 'img12.jpg', 'img13.jpg', 'img14.jpg', 'img15.jpg',
+  'img16.jpg', 'img17.jpg', 'img18.jpg', 'img19.jpg', 'img20.jpg'
+];
+
+function useKey(handler) {
+  useEffect(() => {
+    const onKey = e => handler(e);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handler]);
+}
+
+function Lightbox({ openIndex, setOpenIndex, images }) {
+  const close = () => setOpenIndex(-1);
+  const prev = () => setOpenIndex(i => (i <= 0 ? images.length - 1 : i - 1));
+  const next = () => setOpenIndex(i => (i >= images.length - 1 ? 0 : i + 1));
+
+  useKey(e => {
+    if (openIndex < 0) return;
+    if (e.key === "Escape") close();
+    if (e.key === "ArrowLeft") prev();
+    if (e.key === "ArrowRight") next();
+  });
+
+  if (openIndex < 0) return null;
+  const src = images[openIndex];
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 grid place-items-center p-4">
+      <button
+        onClick={close}
+        className="absolute top-5 right-5 text-white/90 text-3xl hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 rounded"
+        aria-label="Tutup lightbox"
+      >
+        ✕
+      </button>
+      <div className="max-w-5xl w-full">
+        <img
+          src={src}
+          alt={`Momen ${openIndex + 1}`}
+          className="w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+          onError={e => { e.currentTarget.src = `https://placehold.co/1200x800/0a0514/fcd34d?text=Momen+${openIndex + 1}`; }}
+        />
+        <div className="mt-4 flex justify-between">
+          <button onClick={prev} className="px-4 py-2 bg-yellow-500 text-gray-900 rounded hover:bg-yellow-400">Sebelumnya</button>
+          <button onClick={next} className="px-4 py-2 bg-yellow-500 text-gray-900 rounded hover:bg-yellow-400">Berikutnya</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GalleryMasonry() {
+  const [openIndex, setOpenIndex] = useState(-1);
+  const cols = 4;
+
+  const chunks = useMemo(() => {
+    const arr = Array.from({ length: cols }, () => []);
+    galleryImages.forEach((src, i) => arr[i % cols].push({ src, i }));
+    return arr;
+  }, [cols]);
+
+  return (
+    <div>
+      <Lightbox openIndex={openIndex} setOpenIndex={setOpenIndex} images={galleryImages} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {chunks.map((col, cidx) => (
+          <div key={cidx} className="flex flex-col gap-4">
+            {col.map(item => (
+              <button
+                key={item.i}
+                onClick={() => setOpenIndex(item.i)}
+                className="relative group focus:outline-none rounded-md overflow-hidden border border-yellow-400/20 hover:border-yellow-400/60 transition-all"
+                aria-label={`Buka Momen ${item.i + 1}`}
+              >
+                <img
+                  src={item.src}
+                  alt={`Kenangan ${item.i + 1}`}
+                  className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110"
+                  onError={e => { e.currentTarget.src = `https://placehold.co/600x800/0a0514/fcd34d?text=Kenangan+${item.i + 1}`; }}
+                />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-t from-black/60 via-black/10 to-transparent transition-opacity" />
+                <div className="absolute bottom-2 left-2 text-xs px-2 py-1 rounded bg-gray-900/70 text-yellow-200">
+                  Momen #{item.i + 1}
+                </div>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ===================================================================================
+   📜 DATA: Timeline + Qualities + Royal Decree
+   =================================================================================== */
+const timelineEvents = [
+  { year: 'November 2023', title: 'Titik Awal di Taman Kebijaksanaan', desc: 'Di bawah rindangnya Wisdom Park, takdir mempertemukan dua jiwa. Sebuah percakapan sederhana menjadi benih dari kisah agung yang kini kita rangkai.', image: 'img2.jpg' },
+  { year: 'Maret 2024', title: 'Sumpah di Bawah Bintang', desc: 'Di tengah keheningan malam, kita berbagi janji. Bukan sekadar kata, melainkan sumpah hati untuk saling menjaga dalam suka dan duka.', image: 'img3.jpg' },
+  { year: 'September 2024', title: 'Ujian Pertama Sang Takdir', desc: 'Badai datang menguji kekuatan. Namun, genggaman tangan kita tak pernah lepas. Kita buktikan bahwa cinta kita lebih kuat dari segala rintangan.', image: 'img4.jpg' },
+  { year: 'Hari Ini', title: 'Pesta Lampion Untuk Ratu', desc: 'Kerajaan hatiku merayakan hari kelahiranmu. Setiap lampion yang terbang adalah doa dan harapanku untuk kebahagiaanmu. Selamat ulang tahun, Ratuku.', image: 'img5.jpg' }
+];
+
+const queenQualities = [
+  { title: 'Hati yang Tulus', desc: "Kebaikanmu terpancar, menerangi siapa saja yang berada di dekatmu.", icon: <StarIcon className="w-8 h-8" /> },
+  { title: 'Senyum Penuh Sihir', desc: "Satu senyumanmu mampu meruntuhkan segala gundah dan lara.", icon: <StarIcon className="w-8 h-8" /> },
+  { title: 'Jiwa yang Kuat', desc: "Engkau adalah benteng yang kokoh, tegar menghadapi badai apapun.", icon: <StarIcon className="w-8 h-8" /> },
+  { title: 'Tawa yang Merdu', desc: "Tawamu adalah alunan musik terindah yang selalu ingin kudengar.", icon: <StarIcon className="w-8 h-8" /> },
+];
+
+const royalDecree = `Dengan nama cinta yang bersemayam di singgasana hati, titah ini diturunkan untuk Sang Ratu, Rofiatul Karomah. Di hari agung kelahiranmu, seluruh semesta turut merayakan. Bintang-bintang merangkai namamu, dan angin malam membisikkan lagu pujian untukmu. Ketahuilah, Wahai Ratuku, engkaulah pusat dari kerajaanku. Senyummu adalah mentari pagi, dan tawamu adalah musik terindah di balairung istana. Setiap langkahmu adalah anugerah, dan keberadaanmu adalah berkah terbesar. Terima kasih telah menjadi pelita di saat gelap, menjadi benteng di kala rapuh. Bersamamu, aku adalah Raja yang paling beruntung di jagat raya. Semoga di usiamu yang baru, takhta kebahagiaan senantiasa menjadi milikmu, dan mahkota kejayaan selalu tersemat di kepalamu. Aku, Rajamu, akan selalu setia di sisimu, menjaga setiap jengkal kerajaan cinta kita. Dari abdi setiamu, Raja Arya Ade (ADE7)`;
+
+/* ===================================================================================
+   💬 GUESTBOOK (localStorage)
+   =================================================================================== */
+const GB_KEY = "guestbook_fika_v1";
+function loadGuestbook() {
+  try {
+    const raw = localStorage.getItem(GB_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+function saveGuestbook(list) {
+  localStorage.setItem(GB_KEY, JSON.stringify(list));
+}
+
+function Guestbook() {
+  const [items, setItems] = useState(() => loadGuestbook());
+  const [name, setName] = useState("");
+  const [msg, setMsg] = useState("");
+  const [count, setCount] = useState(items.length);
+
+  const add = e => {
+    e.preventDefault();
+    const n = name.trim();
+    const m = msg.trim();
+    if (!n || !m) return;
+    const item = { id: Date.now(), name: n, msg: m, ts: new Date().toISOString() };
+    const list = [item, ...items].slice(0, 120);
+    setItems(list);
+    setCount(list.length);
+    saveGuestbook(list);
+    setName("");
+    setMsg("");
+  };
+
+  const exportJson = () => {
+    const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "guestbook_fika.json"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="bg-gray-900/40 backdrop-blur-md rounded-lg border border-yellow-400/20 p-6">
+      <h3 className="text-2xl font-serif-regal text-shadow-gold mb-2">Buku Tamu</h3>
+      <p className="text-yellow-200/70 mb-4">Tinggalkan ucapan untuk Sang Ratu. Total: {count}</p>
+      <form onSubmit={add} className="grid md:grid-cols-3 gap-3">
+        <input
+          className="px-3 py-2 rounded bg-gray-800/60 border border-yellow-400/20 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          placeholder="Namamu"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          aria-label="Nama"
+        />
+        <input
+          className="px-3 py-2 rounded bg-gray-800/60 border border-yellow-400/20 focus:outline-none focus:ring-2 focus:ring-yellow-400 md:col-span-2"
+          placeholder="Tulis ucapan hangat..."
+          value={msg}
+          onChange={e => setMsg(e.target.value)}
+          aria-label="Ucapan"
+        />
+        <div className="flex gap-3">
+          <button className="px-4 py-2 bg-yellow-500 text-gray-900 rounded hover:bg-yellow-400">Kirim</button>
+          <button type="button" onClick={exportJson}
+            className="px-4 py-2 bg-gray-700 text-yellow-200 rounded hover:bg-gray-600 border border-yellow-400/30">
+            Ekspor JSON
+          </button>
+        </div>
+      </form>
+
+      <ul className="mt-6 space-y-3 max-h-[340px] overflow-auto pr-1">
+        {items.map(it => (
+          <li key={it.id} className="p-3 rounded bg-gray-800/50 border border-yellow-400/10">
+            <div className="text-yellow-200/90 font-semibold">{it.name}</div>
+            <div className="text-yellow-100/80">{it.msg}</div>
+            <div className="text-xs text-yellow-300/50 mt-1">{new Date(it.ts).toLocaleString()}</div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ===================================================================================
+   🧘 MODE ZEN (toggle performa)
+   =================================================================================== */
+function ZenToggle({ on, setOn }) {
+  return (
+    <button
+      onClick={() => setOn(v => !v)}
+      className="fixed left-5 bottom-5 z-[101] px-3 py-2 rounded-full bg-gray-900/60 border border-yellow-400/20 text-yellow-200 hover:bg-gray-800/70 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+      aria-pressed={on}
+      aria-label="Toggle Zen Performance Mode"
+    >
+      {on ? "Zen: ON" : "Zen: OFF"}
+    </button>
+  );
+}
+
+/* ===================================================================================
+   🏁 MAIN PAGE
+   =================================================================================== */
+export default function Home() {
+  const [zen, setZen] = useState(false);
+  const [confettiNow, setConfettiNow] = useState(false);
+  const [fireworks, setFireworks] = useState(isNight());
+
+  // confetti saat countdown selesai
+  const onCountdownDone = useCallback(() => {
+    setConfettiNow(true);
+    setTimeout(() => setConfettiNow(false), 4000);
+  }, []);
+
+  // aksesibilitas: skip link
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === "#main") {
+      const el = document.getElementById("main");
+      el?.focus();
+    }
+  }, []);
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Jost:wght@400;600&display=swap');
+        .font-serif-regal { font-family: 'Cinzel Decorative', cursive; }
+        .font-sans { font-family: 'Jost', sans-serif; }
+
+        .majestic-bg { background-color: #0a0514; }
+        .text-shadow-gold { text-shadow: 0 0 10px rgba(252, 211, 77, 0.5), 0 0 20px rgba(252, 211, 77, 0.3); }
+
+        /* Parallax assets */
+        .bg-night-sky { background: linear-gradient(to bottom, #0a0514, #1a0f36, #3c2a66); }
+        .bg-stars { background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); opacity: 0.5; }
+        .bg-mountains { background: url('https://i.imgur.com/g032M9A.png') repeat-x bottom center; background-size: contain; opacity: 0.3; }
+        .bg-castle { background: url('https://i.imgur.com/B435s44.png') repeat-x bottom center; background-size: contain; opacity: 0.4; }
+
+        /* Floating lanterns */
+        @keyframes float-up {
+          0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+        }
+        .lantern-bg {
+          position: absolute;
+          bottom: -150px;
+          width: 80px;
+          height: 80px;
+          background-image: url('https://i.imgur.com/b9x34S2.png');
+          background-size: contain;
+          background-repeat: no-repeat;
+          animation: float-up linear infinite;
+          filter: drop-shadow(0 0 12px rgba(252,211,77,0.4));
+        }
+
+        /* Header Gradient + Glow */
+        .hero-glow {
+          background: radial-gradient(60% 60% at 50% 60%, rgba(251,191,36,0.12), transparent 60%);
+        }
+
+        /* Button base */
+        .btn {
+          @apply inline-flex items-center gap-2 px-4 py-2 rounded bg-yellow-500 text-gray-900 hover:bg-yellow-400 transition-colors;
+        }
+
+        /* Focus ring better */
+        .focus-ring:focus {
+          outline: 2px solid rgba(251, 191, 36, 0.9);
+          outline-offset: 3px;
+          border-radius: 10px;
+        }
+      `}</style>
+
+      {/* Skip to content */}
+      <a href="#main" className="sr-only focus:not-sr-only focus-ring absolute top-0 left-0 m-2 px-3 py-1 bg-yellow-400 text-gray-900 rounded">
+        Lewati ke konten utama
+      </a>
+
+      <div className="w-full min-h-screen majestic-bg text-white font-sans">
+        <ParallaxBackground disabled={zen} />
+        <FloatingLanterns disabled={zen} />
+        {!zen && <AudioPlayer />}
+        <ZenToggle on={zen} setOn={setZen} />
+        {fireworks && <FireworksLayer enabled={!zen} />}
+        {confettiNow && <ConfettiBurst trigger={confettiNow} />}
+
+        {/* Header / Hero */}
+        <header className="relative h-[92vh] md:h-screen grid place-items-center overflow-hidden">
+          <div className="absolute inset-0 hero-glow" aria-hidden="true" />
+          <div className="relative z-10 text-center px-6">
+            <p className="text-lg md:text-2xl text-yellow-300/85 mb-4">Persembahan Agung dari Kerajaan Hati</p>
+            <h1 className="text-5xl md:text-7xl font-serif-regal font-bold text-shadow-gold mb-4">
+              Untuk Sang Ratu
+            </h1>
+            <p className="text-2xl md:text-3xl font-serif-regal text-white/90 italic">
+              <Typewriter
+                words={[
+                  "Rofiatul Karomah",
+                  "Ratuku, Lampion Semestaku",
+                  "Penjaga Senyum di Balairung Cinta",
+                ]}
+              />
+            </p>
+
+            <div className="mt-8">
+              <SparklesRow />
+            </div>
+
+            <div className="mt-10 flex items-center justify-center gap-4">
+              <button
+                onClick={() => setFireworks(f => !f)}
+                className="btn focus-ring"
+                aria-pressed={fireworks}
+              >
+                <CrownIcon className="w-5 h-5" />
+                {fireworks ? "Matikan Kembang Api" : "Nyalakan Kembang Api"}
+              </button>
+              <a href="#main" className="btn focus-ring">Jelajahi</a>
+            </div>
+
+            <div className="absolute bottom-[6vh] left-1/2 -translate-x-1/2 text-yellow-300 animate-bounce">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+          </div>
+        </header>
+
+        {/* Main */}
+        <main id="main" tabIndex={-1} className="relative z-10 max-w-7xl mx-auto px-6 py-16 sm:py-20 space-y-24 outline-none">
+          {/* Dekrit */}
+          <AnimatedSection>
+            <div className="text-center mb-10">
+              <h2 className="text-4xl md:text-5xl font-serif-regal font-bold text-shadow-gold">
+                Titah Agung Sang Raja
+              </h2>
+              <p className="text-lg text-yellow-300/70 italic mt-2">
+                Sebuah dekrit yang tertulis dari lubuk hati terdalam.
+              </p>
+            </div>
+            <div className="bg-gray-900/40 backdrop-blur-md max-w-4xl mx-auto p-8 md:p-12 rounded-lg shadow-2xl border border-yellow-400/20">
+              <p className="text-yellow-100/80 leading-loose whitespace-pre-line text-lg text-center">
+                {royalDecree}
+              </p>
+            </div>
+          </AnimatedSection>
+
+          {/* Countdown */}
+          <AnimatedSection>
+            <div className="text-center mb-8">
+              <h2 className="text-3xl md:text-4xl font-serif-regal font-bold text-shadow-gold">
+                Hitung Mundur Perayaan
+              </h2>
+              <p className="text-yellow-300/70 italic mt-2">
+                Menuju jam tepat hari lahir Sang Ratu.
+              </p>
+            </div>
+            <Countdown target="2025-10-05T00:00:00+07:00" onDone={onCountdownDone} />
+          </AnimatedSection>
+
+          {/* Timeline */}
+          <AnimatedSection>
+            <div className="text-center mb-14">
+              <h2 className="text-4xl md:text-5xl font-serif-regal font-bold text-shadow-gold">
+                Tawarikh Emas Kerajaan Kita
+              </h2>
+              <p className="text-lg text-yellow-300/70 italic mt-2">
+                Setiap prasasti adalah tonggak sejarah perjalanan cinta.
+              </p>
+            </div>
+            <div className="space-y-20">
+              {timelineEvents.map((event, index) => (
+                <div key={index} className={`flex flex-col md:flex-row items-center gap-10 ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''}`}>
+                  <div className="w-full md:w-1/2 group">
+                    <img
+                      src={event.image}
+                      alt={event.title}
+                      className="w-full aspect-video object-cover rounded-lg shadow-2xl border-4 border-yellow-500/30 transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => { e.currentTarget.src = `https://placehold.co/1200x675/0a0514/fcd34d?text=${encodeURIComponent(event.title)}`; }}
+                    />
+                  </div>
+                  <div className="w-full md:w-1/2">
+                    <p className="text-yellow-400 font-bold text-xl">{event.year}</p>
+                    <h3 className="text-3xl font-serif-regal font-bold my-2">{event.title}</h3>
+                    <p className="text-yellow-100/80 text-lg leading-relaxed">{event.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </AnimatedSection>
+
+          {/* Qualities */}
+          <AnimatedSection>
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-serif-regal font-bold text-shadow-gold">
+                Kemuliaan Sang Ratu
+              </h2>
+              <p className="text-lg text-yellow-300/70 italic mt-2">
+                Sifat-sifat agung yang membangun takhta di hatiku.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {queenQualities.map((q, idx) => (
+                <div
+                  key={idx}
+                  className="bg-gray-900/40 border border-yellow-400/20 rounded-lg p-6 text-center backdrop-blur-sm transform transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-2"
+                >
+                  <div className="text-yellow-400 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                    {q.icon}
+                  </div>
+                  <h3 className="text-xl font-serif-regal font-bold mb-2">{q.title}</h3>
+                  <p className="text-yellow-100/70">{q.desc}</p>
+                </div>
+              ))}
+            </div>
+          </AnimatedSection>
+
+          {/* Gallery */}
+          <AnimatedSection>
+            <div className="text-center mb-10">
+              <h2 className="text-4xl md:text-5xl font-serif-regal font-bold text-shadow-gold">
+                Balairung Kenangan
+              </h2>
+              <p className="text-lg text-yellow-300/70 italic mt-2">
+                Lukisan abadi dari setiap momen berharga.
+              </p>
+            </div>
+            <GalleryMasonry />
+          </AnimatedSection>
+
+          {/* Guestbook */}
+          <AnimatedSection>
+            <Guestbook />
+          </AnimatedSection>
+        </main>
+
+        {/* Footer */}
+        <footer className="text-center py-12 px-6 border-t border-yellow-400/10 mt-16 relative z-10">
+          <LanternIcon className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+          <p className="text-yellow-200/70 text-lg">
+            Semoga lampion-lampion harapan ini menerangi jalanmu,
+          </p>
+          <p className="text-2xl font-serif-regal font-bold text-white mt-2">
+            Selamat Ulang Tahun, Ratuku.
+          </p>
+          <p className="text-yellow-200/50 mt-4">
+            &copy; {new Date().getFullYear()} - Dari Rajamu, ADE7.
+          </p>
+        </footer>
+      </div>
+    </>
+  );
+}

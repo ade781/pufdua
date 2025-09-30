@@ -1,0 +1,234 @@
+import React, { useState, useEffect, useRef } from "react";
+
+// ===================================================================================
+// ✨ ICON COMPONENTS (SVG) ✨
+// Didesain khusus untuk tema "Kerajaan Lampion" yang megah.
+// ===================================================================================
+
+const LanternIcon = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16 2H8C6.9 2 6 2.9 6 4v1H4.5C4.22 5 4 5.22 4 5.5s.22.5.5.5H6v10H4.5c-.28 0-.5.22-.5.5s.22.5.5.5H6v1c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-1h1.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5H18V5h1.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5H18V4c0-1.1-.9-2-2-2zm-2 15h-4v-1h4v1zm0-3h-4v-1h4v1zm0-3h-4V8h4v3z" /></svg>
+);
+
+const CrownIcon = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.35 7.16h7.65l-6.18 4.48 2.36 7.16-6.18-4.48-6.18 4.48 2.36-7.16-6.18-4.48h7.65L12 2z" /></svg>
+);
+
+const StarIcon = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>
+);
+
+// ===================================================================================
+// ✨ REUSABLE & ANIMATION COMPONENTS ✨
+// Komponen baru untuk efek visual yang lebih kaya.
+// ===================================================================================
+
+const AudioPlayer = () => {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const togglePlayPause = () => {
+    const audio = audioRef.current;
+    if (isPlaying) audio.pause(); else audio.play().catch(e => console.log(e));
+    setIsPlaying(!isPlaying);
+  };
+  return (
+    <div className="fixed bottom-5 right-5 z-[100]"><div className="flex items-center gap-2 bg-gray-900/50 backdrop-blur-lg border border-yellow-400/20 rounded-full p-2 shadow-2xl"><audio ref={audioRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" loop /><button onClick={togglePlayPause} aria-label="Play/Pause" className="w-12 h-12 rounded-full bg-yellow-500/80 hover:bg-yellow-500 text-gray-900 flex items-center justify-center transition-all duration-300 text-2xl font-mono">{isPlaying ? '❚❚' : '►'}</button></div></div>
+  );
+};
+
+const useOnScreen = (options) => {
+  const ref = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setIsVisible(true); observer.unobserve(entry.target); }
+    }, options);
+    if (ref.current) observer.observe(ref.current);
+    return () => { if (ref.current) observer.unobserve(ref.current); };
+  }, [ref, options]);
+  return [ref, isVisible];
+};
+
+const AnimatedSection = ({ children, className = '' }) => {
+  const [ref, isVisible] = useOnScreen({ threshold: 0.1 });
+  return (<section ref={ref} className={`transition-all duration-1000 ease-out ${className} ${isVisible ? 'opacity-100 transform-none' : 'opacity-0 translate-y-10'}`}>{children}</section>);
+};
+
+// **KOMPONEN BARU: Lampion Melayang sebagai Latar**
+const FloatingLanterns = ({ count = 15 }) => (
+  <div className="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+    {Array.from({ length: count }).map((_, i) => (
+      <div key={i} className="lantern-bg" style={{
+        left: `${Math.random() * 100}%`,
+        animationDuration: `${20 + Math.random() * 20}s`,
+        animationDelay: `${Math.random() * 20}s`,
+        transform: `scale(${0.2 + Math.random() * 0.5})`
+      }}></div>
+    ))}
+  </div>
+);
+
+// **KOMPONEN BARU: Latar Paralaks**
+const ParallaxBackground = () => {
+  const [offsetY, setOffsetY] = useState(0);
+  const handleScroll = () => setOffsetY(window.pageYOffset);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <div className="fixed top-0 left-0 w-full h-full -z-20 pointer-events-none">
+      <div className="absolute inset-0 bg-night-sky"></div>
+      <div className="absolute inset-0 bg-stars" style={{ transform: `translateY(${offsetY * 0.1}px)` }}></div>
+      <div className="absolute bottom-0 left-0 w-full h-1/2 bg-mountains" style={{ transform: `translateY(${offsetY * 0.3}px)` }}></div>
+      <div className="absolute bottom-0 left-0 w-full h-1/3 bg-castle" style={{ transform: `translateY(${offsetY * 0.4}px)` }}></div>
+    </div>
+  );
+};
+
+
+// ===================================================================================
+// ✨ DATA KONTEN ✨
+// Diperbarui dengan babak baru: Kemuliaan Sang Ratu.
+// ===================================================================================
+
+const timelineEvents = [
+  { year: 'November 2023', title: 'Titik Awal di Taman Kebijaksanaan', desc: 'Di bawah rindangnya Wisdom Park, takdir mempertemukan dua jiwa. Sebuah percakapan sederhana menjadi benih dari kisah agung yang kini kita rangkai.', image: 'img2.jpg' },
+  { year: 'Maret 2024', title: 'Sumpah di Bawah Bintang', desc: 'Di tengah keheningan malam, kita berbagi janji. Bukan sekadar kata, melainkan sumpah hati untuk saling menjaga dalam suka dan duka.', image: 'img3.jpg' },
+  { year: 'September 2024', title: 'Ujian Pertama Sang Takdir', desc: 'Badai datang menguji kekuatan. Namun, genggaman tangan kita tak pernah lepas. Kita buktikan bahwa cinta kita lebih kuat dari segala rintangan.', image: 'img4.jpg' },
+  { year: 'Hari Ini', title: 'Pesta Lampion Untuk Ratu', desc: 'Kerajaan hatiku merayakan hari kelahiranmu. Setiap lampion yang terbang adalah doa dan harapanku untuk kebahagiaanmu. Selamat ulang tahun, Ratuku.', image: 'img5.jpg' }
+];
+
+// **DATA BARU: Sifat-sifat Sang Ratu**
+const queenQualities = [
+  { title: 'Hati yang Tulus', desc: "Kebaikanmu terpancar, menerangi siapa saja yang berada di dekatmu.", icon: <StarIcon className="w-8 h-8" /> },
+  { title: 'Senyum Penuh Sihir', desc: "Satu senyumanmu mampu meruntuhkan segala gundah dan lara.", icon: <StarIcon className="w-8 h-8" /> },
+  { title: 'Jiwa yang Kuat', desc: "Engkau adalah benteng yang kokoh, tegar menghadapi badai apapun.", icon: <StarIcon className="w-8 h-8" /> },
+  { title: 'Tawa yang Merdu', desc: "Tawamu adalah alunan musik terindah yang selalu ingin kudengar.", icon: <StarIcon className="w-8 h-8" /> },
+];
+
+const galleryImages = ['img6.jpg', 'img7.jpg', 'img8.jpg', 'img9.jpg', 'img10.jpg', 'img11.jpg', 'img12.jpg', 'img13.jpg'];
+
+const royalDecree = `Dengan nama cinta yang bersemayam di singgasana hati, titah ini diturunkan untuk Sang Ratu, Rofiatul Karomah. Di hari agung kelahiranmu, seluruh semesta turut merayakan. Bintang-bintang merangkai namamu, dan angin malam membisikkan lagu pujian untukmu. Ketahuilah, Wahai Ratuku, engkaulah pusat dari kerajaanku. Senyummu adalah mentari pagi, dan tawamu adalah musik terindah di balairung istana. Setiap langkahmu adalah anugerah, dan keberadaanmu adalah berkah terbesar. Terima kasih telah menjadi pelita di saat gelap, menjadi benteng di kala rapuh. Bersamamu, aku adalah Raja yang paling beruntung di jagat raya. Semoga di usiamu yang baru, takhta kebahagiaan senantiasa menjadi milikmu, dan mahkota kejayaan selalu tersemat di kepalamu. Aku, Rajamu, akan selalu setia di sisimu, menjaga setiap jengkal kerajaan cinta kita. Dari abdi setiamu, Raja Arya Ade (ADE7)`;
+
+// ===================================================================================
+// ✨ MAIN COMPONENT: HALAMAN UNTUK FIKA ✨
+// ===================================================================================
+
+export default function Home() {
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Jost:wght@400;600&display=swap');
+        .font-serif-regal { font-family: 'Cinzel Decorative', cursive; }
+        .font-sans { font-family: 'Jost', sans-serif; }
+        
+        .majestic-bg { background-color: #0a0514; }
+        .text-shadow-gold { text-shadow: 0 0 10px rgba(252, 211, 77, 0.5), 0 0 20px rgba(252, 211, 77, 0.3); }
+
+        /* CSS untuk Latar Paralaks */
+        .bg-night-sky { background: linear-gradient(to bottom, #0a0514, #1a0f36, #3c2a66); }
+        .bg-stars { background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); opacity: 0.5; }
+        .bg-mountains { background: url('https://i.imgur.com/g032M9A.png') repeat-x bottom center; background-size: contain; opacity: 0.3; }
+        .bg-castle { background: url('https://i.imgur.com/B435s44.png') repeat-x bottom center; background-size: contain; opacity: 0.4; }
+
+        /* CSS untuk Animasi Lampion Melayang */
+        @keyframes float-up {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+        .lantern-bg {
+            position: absolute;
+            bottom: -150px;
+            width: 80px;
+            height: 80px;
+            background-image: url('https://i.imgur.com/b9x34S2.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            animation: float-up linear infinite;
+        }
+      `}</style>
+
+      <div className="w-full majestic-bg text-white font-sans">
+        <ParallaxBackground />
+        <FloatingLanterns />
+        <AudioPlayer />
+
+        <header className="h-screen flex flex-col items-center justify-center text-center p-6 relative">
+          <div className="relative z-10">
+            <p className="text-xl md:text-2xl font-sans text-yellow-300/80 mb-4">
+              Persembahan Agung dari Kerajaan Hati
+            </p>
+            <h1 className="text-6xl md:text-8xl font-serif-regal font-bold mb-6 text-shadow-gold">
+              Untuk Sang Ratu
+            </h1>
+            <p className="text-2xl md:text-3xl font-serif-regal text-white/90 italic max-w-2xl mx-auto mb-10">
+              Rofiatul Karomah
+            </p>
+            <div className="absolute bottom-[-10vh] left-1/2 -translate-x-1/2 text-yellow-300 animate-bounce">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-6 py-20 sm:py-28 space-y-32 relative z-10">
+          <AnimatedSection>
+            <div className="text-center mb-16"><h2 className="text-4xl md:text-5xl font-serif-regal font-bold text-shadow-gold">Titah Agung Sang Raja</h2><p className="text-lg text-yellow-300/70 italic mt-2">Sebuah dekrit yang tertulis dari lubuk hati terdalam.</p></div>
+            <div className="bg-gray-900/40 backdrop-blur-md max-w-4xl mx-auto p-8 md:p-12 rounded-lg shadow-2xl border border-yellow-400/20"><p className="text-yellow-100/80 leading-loose whitespace-pre-line text-lg text-center">{royalDecree}</p></div>
+          </AnimatedSection>
+
+          <AnimatedSection>
+            <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif-regal font-bold text-shadow-gold">Tawarikh Emas Kerajaan Kita</h2><p className="text-lg text-yellow-300/70 italic mt-2">Setiap prasasti adalah tonggak sejarah perjalanan cinta.</p></div>
+            <div className="space-y-20">
+              {timelineEvents.map((event, index) => (
+                <div key={index} className={`flex flex-col md:flex-row items-center gap-10 ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''}`}>
+                  <div className="w-full md:w-1/2 group"><img src={event.image} alt={event.title} className="w-full aspect-video object-cover rounded-lg shadow-2xl border-4 border-yellow-500/30 transition-transform duration-500 group-hover:scale-105" /></div>
+                  <div className="w-full md:w-1/2"><p className="text-yellow-400 font-bold text-xl">{event.year}</p><h3 className="text-3xl font-serif-regal font-bold my-2">{event.title}</h3><p className="text-yellow-100/80 text-lg leading-relaxed">{event.desc}</p></div>
+                </div>
+              ))}
+            </div>
+          </AnimatedSection>
+
+          {/* **BABAK BARU: KEMULIAAN SANG RATU** */}
+          <AnimatedSection>
+            <div className="text-center mb-16"><h2 className="text-4xl md:text-5xl font-serif-regal font-bold text-shadow-gold">Kemuliaan Sang Ratu</h2><p className="text-lg text-yellow-300/70 italic mt-2">Sifat-sifat agung yang membangun takhta di hatiku.</p></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {queenQualities.map((quality, index) => (
+                <div key={index} className="bg-gray-900/40 border border-yellow-400/20 rounded-lg p-6 text-center backdrop-blur-sm transform transition-all duration-300 hover:border-yellow-400/50 hover:-translate-y-2">
+                  <div className="text-yellow-400 w-16 h-16 mx-auto mb-4 flex items-center justify-center">{quality.icon}</div>
+                  <h3 className="text-xl font-serif-regal font-bold mb-2">{quality.title}</h3>
+                  <p className="text-yellow-100/70">{quality.desc}</p>
+                </div>
+              ))}
+            </div>
+          </AnimatedSection>
+
+          <AnimatedSection>
+            <div className="text-center mb-16"><h2 className="text-4xl md:text-5xl font-serif-regal font-bold text-shadow-gold">Balairung Kenangan</h2><p className="text-lg text-yellow-300/70 italic mt-2">Lukisan abadi dari setiap momen berharga.</p></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+              {galleryImages.map((src, index) => (
+                <div key={index} className="group p-2 bg-gradient-to-br from-yellow-800 to-yellow-900 rounded-md shadow-2xl transform transition-all duration-300 hover:!scale-110 hover:-rotate-2 hover:z-20">
+                  <img src={src} onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/400x400/0a0514/fcd34d?text=Kenangan+${index + 1}`; }} alt={`Kenangan ${index + 1}`} className="w-full h-full object-cover rounded-sm border-2 border-yellow-600/50" />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-2">
+                    <p className="text-white text-center font-bold">Momen #{index + 1}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </AnimatedSection>
+        </main>
+
+        <footer className="text-center py-10 px-6 border-t border-yellow-400/10 mt-16 relative z-10">
+          <LanternIcon className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+          <p className="text-yellow-200/70 text-lg">Semoga lampion-lampion harapan ini menerangi jalanmu,</p>
+          <p className="text-2xl font-serif-regal font-bold text-white mt-2">Selamat Ulang Tahun, Ratuku.</p>
+          <p className="text-yellow-200/50 mt-4">&copy; {new Date().getFullYear()} - Dari Rajamu, ADE7.</p>
+        </footer>
+      </div>
+    </>
+  );
+}
+

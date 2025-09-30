@@ -8,38 +8,28 @@ import React, {
 } from "react";
 
 /* ===================================================================================
-   GALERI • KERAJAAN LAMPION
-   - Parallax header bertema istana malam
-   - Filter kategori + pencarian
-   - Masonry Grid responsif
-   - Lightbox: zoom ringan, keyboard nav, slide show
-   - Favorit (localStorage)
-   - Share / Download tiap foto
-   - Aksesibilitas dasar (ARIA, focus trap ringan)
-   Catatan:
-   - Gambar contoh memakai path relatif; ganti sesuai asetmu.
-   - Tailwind-friendly, tapi ada CSS inline biar mandiri.
+   GALERI — THE FAMILY ARCHIVE (MAFIA/NOIR EDITION)
+   - Parallax header: skyline basah hujan, neon, siren sweep
+   - Filter + search tetap
+   - Masonry grid, tapi item = POLAROID berantakan (no “card” boxy)
+   - Lightbox: zoom, keyboard, slideshow
+   - Favorit (localStorage), Share/Download
+   - Aksesibilitas dasar
+   - Tailwind-friendly, semua animasi penting inlined
+   - Gambar contoh pakai img6.jpg dst, silakan ganti
    =================================================================================== */
 
 /* =========================
-   0) ICONS (SVG) selaras tema
+   0) ICONS (NOIR)
    ========================= */
 const IconHeart = ({ className = "w-5 h-5", filled }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill={filled ? "currentColor" : "none"}
-    stroke="currentColor"
-    strokeWidth={1.6}
-    aria-hidden="true"
-  >
-    <path d="M12 21s-6.716-4.534-9.428-7.246C.86 12.042.5 10.95.5 9.8.5 7.149 2.649 5 5.3 5c1.51 0 2.85.697 3.7 1.79C9.85 5.697 11.19 5 12.7 5 15.351 5 17.5 7.149 17.5 9.8c0 1.15-.36 2.242-2.072 3.954C18.716 16.466 12 21 12 21z" />
+  <svg className={className} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.6} aria-hidden="true">
+    <path d="M12 21s-6.7-4.5-9.4-7.2C.9 12 .5 10.9.5 9.8.5 7.1 2.6 5 5.3 5c1.5 0 2.8.7 3.7 1.8C9.9 5.7 11.2 5 12.7 5 15.3 5 17.5 7.1 17.5 9.8c0 1.1-.4 2.2-2.1 4C18.7 16.5 12 21 12 21z" />
   </svg>
 );
 const IconSearch = ({ className = "w-5 h-5" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-    <circle cx="11" cy="11" r="7"></circle>
-    <path d="m20 20-3.5-3.5"></path>
+    <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>
   </svg>
 );
 const IconFilter = ({ className = "w-5 h-5" }) => (
@@ -49,16 +39,12 @@ const IconFilter = ({ className = "w-5 h-5" }) => (
 );
 const IconShare = ({ className = "w-5 h-5" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-    <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path>
-    <path d="m16 6-4-4-4 4"></path>
-    <path d="M12 2v14"></path>
+    <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path><path d="m16 6-4-4-4 4"></path><path d="M12 2v14"></path>
   </svg>
 );
 const IconDownload = ({ className = "w-5 h-5" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-    <path d="M7 10l5 5 5-5"></path>
-    <path d="M12 15V3"></path>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path>
   </svg>
 );
 const IconClose = ({ className = "w-6 h-6" }) => (
@@ -77,100 +63,97 @@ const IconChevronRight = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 const IconPlay = ({ className = "w-6 h-6" }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M8 5v14l11-7z" />
-  </svg>
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
 );
 const IconPause = ({ className = "w-6 h-6" }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-  </svg>
-);
-const IconLantern = ({ className = "w-4 h-4" }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M9 2h6a2 2 0 0 1 2 2v1h1.5a.5.5 0 0 1 0 1H17v12h1.5a.5.5 0 0 1 0 1H17v1a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-1H5.5a.5.5 0 1 1 0-1H7V6H5.5a.5.5 0 1 1 0-1H7V4a2 2 0 0 1 2-2Zm1 5h4v3h-4V7Zm0 5h4v1h-4v-1Zm0 3h4v1h-4v-1Z" />
-  </svg>
-);
-const IconCrown = ({ className = "w-4 h-4" }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="m12 3 2.1 6.3H21l-5 3.8 2 6.3-5-3.7-5 3.7 2-6.3-5-3.8h6.9L12 3Z" />
-  </svg>
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
 );
 
 /* =========================
-   1) GLOBAL THEME STYLES inline
+   1) GLOBAL THEME: NOIR
    ========================= */
 const ThemeStyle = () => (
   <style>{`
-    :root {
-      --bg-deep: #0b0716;
-      --gold: #FBBF24;
-      --gold-soft: rgba(251,191,36,.65);
-      --glass-1: rgba(16,10,31,.72);
-      --glass-2: rgba(16,10,31,.62);
-      --purple-3: #A78BFA;
-      --purple-4: #8B5CF6;
+    :root{
+      --noir:#09090f; --ink:#0d0d14; --red:#ff2f4f; --gold:#f6c945; --cyan:#45f6da; --glass:rgba(255,255,255,.05);
     }
-    .majestic-bg { background-color: var(--bg-deep); }
-    .font-serif-regal { font-family: 'Cinzel Decorative', cursive; }
-    .font-sans { font-family: 'Jost', sans-serif; }
-    .text-shadow-gold {
-      text-shadow: 0 0 10px rgba(252, 211, 77, 0.5), 0 0 20px rgba(252, 211, 77, 0.3);
-    }
-    .card {
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(253, 230, 138, .18);
-      backdrop-filter: blur(10px);
-      border-radius: 14px;
-      box-shadow: 0 10px 34px rgba(0,0,0,.25);
-    }
-    .chip {
-      padding: 6px 10px; border-radius: 999px; font-weight: 600; font-size: .85rem;
-      border: 1px solid rgba(253, 230, 138, .30); color: #FDE68A;
-      background: rgba(255,255,255,.06);
-      transition: background .2s ease, border-color .2s ease, transform .08s ease;
-    }
-    .chip:hover { background: rgba(253,230,138,.08); border-color: rgba(253,230,138,.55); transform: translateY(-1px); }
-    .chip.active { color: #120a26; background: linear-gradient(90deg, #A78BFA, #8B5CF6 40%, #FBBF24); border-color: transparent; }
-    .btn-ghost {
-      background: rgba(255,255,255,.06); color: #FDE68A; font-weight: 600;
-      border: 1px solid rgba(253, 230, 138, .25); border-radius: 10px; padding: 9px 14px;
-      transition: background .2s ease, border-color .2s ease;
-    }
-    .btn-ghost:hover { background: rgba(253, 230, 138, .08); border-color: rgba(253, 230, 138, .5); }
-    .btn-solid {
-      display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px;
-      background: linear-gradient(90deg, #A78BFA, #8B5CF6 40%, #FBBF24);
-      color:#120a26; font-weight:700; box-shadow:0 6px 18px rgba(139,92,246,.25);
-    }
-    .btn-solid:hover { filter: brightness(1.05); }
-    .focus-ring:focus { outline: 2px solid rgba(251,191,36, .9); outline-offset: 3px; border-radius: 10px; }
+    .noir-bg{ background: radial-gradient(1200px 700px at 50% -10%, #171421 0%, var(--noir) 55%); }
+    .grain::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.12;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.24'/%3E%3C/svg%3E");mix-blend-mode:soft-light;z-index:2}
+    .neon-red{ color:var(--red); text-shadow:0 0 12px rgba(255,47,79,.55), 0 0 28px rgba(255,47,79,.3); }
+    .neon-gold{ color:var(--gold); text-shadow:0 0 12px rgba(246,201,69,.55), 0 0 28px rgba(246,201,69,.3); }
+    .siren{ animation: siren 2.4s linear infinite; }
+    @keyframes siren{0%,49%{box-shadow:0 0 20px rgba(255,0,0,.2)}50%,100%{box-shadow:0 0 20px rgba(0,128,255,.2)}}
 
-    /* Parallax header */
-    .bg-night-sky { background: linear-gradient(to bottom, #0a0514, #1a0f36, #3c2a66); }
-    .bg-stars { background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); opacity: 0.5; }
-    .bg-mountains { background: url('https://i.imgur.com/g032M9A.png') repeat-x bottom center; background-size: contain; opacity: 0.28; }
-    .bg-castle { background: url('https://i.imgur.com/B435s44.png') repeat-x bottom center; background-size: contain; opacity: 0.38; }
+    /* Skyline layers (parallax) */
+    .layer-a{ background:url('https://images.unsplash.com/photo-1491884662610-dfcd28f30cf5?auto=format&fit=crop&w=1600&q=60') center/cover no-repeat; opacity:.18 }
+    .layer-b{ background:url('https://images.unsplash.com/photo-1449157291145-7efd050a4d0e?auto=format&fit=crop&w=1600&q=60') center/cover no-repeat; opacity:.22 }
+    .layer-c{ background:url('https://images.unsplash.com/photo-1508057198894-247b23fe5ade?auto=format&fit=crop&w=1600&q=60') center/cover no-repeat; opacity:.28 }
 
-    /* Lantern animation */
-    @keyframes float-up {
-      0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-      10% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+    /* Rain */
+    @keyframes raindrop { to { transform: translateY(120vh); } }
+    .drop{ position:absolute; top:-10vh; width:1px; height:12vh; background:linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,.35)); filter:blur(.2px); animation:raindrop linear infinite; opacity:.45; }
+
+    /* Money & chips */
+    @keyframes fallCash { 0%{ transform: translateY(-10vh) rotate(0); opacity:0 } 12%{opacity:1} 100%{ transform: translateY(110vh) rotate(360deg); opacity:0 } }
+    .bill{ position:fixed; top:-10vh; width:90px; height:42px; background:linear-gradient(135deg,#2b8a3e,#1e5128); border:1px solid rgba(255,255,255,.15); border-radius:4px; box-shadow:0 8px 20px rgba(0,0,0,.5), inset 0 0 0 2px rgba(0,0,0,.2); animation:fallCash linear forwards; z-index:3 }
+    .bill::after{ content:"$"; position:absolute; inset:0; display:grid; place-items:center; color:rgba(255,255,255,.9); font-weight:800; font-size:18px; text-shadow:0 0 6px rgba(255,255,255,.6); }
+
+    /* Laser sweep */
+    @keyframes sweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(120%)} }
+    .sweep { position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation:sweep 2.8s linear infinite; }
+
+    /* Polaroid look: no boxy card */
+    .polaroid{
+      position:relative; background:#111; border-radius:6px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.5), 0 2px 0 rgba(255,255,255,.06) inset;
+      transform: rotate(var(--rot, 0deg)) translateZ(0); transition: transform .2s ease, box-shadow .2s ease; will-change: transform;
+      clip-path: polygon(3% 2%, 97% 0%, 100% 94%, 2% 98%); /* Irregular edges */
     }
-    .lantern-bg {
-      position:absolute; bottom:-150px; width:80px; height:80px;
-      background-image:url('https://i.imgur.com/b9x34S2.png');
-      background-size:contain; background-repeat:no-repeat;
-      animation: float-up linear infinite;
-      filter: drop-shadow(0 0 12px rgba(252,211,77,0.4));
-      will-change: transform, opacity;
+    .polaroid:hover{ transform: rotate(var(--rot, 0deg)) translateY(-3px); box-shadow: 0 28px 58px rgba(0,0,0,.6), 0 2px 0 rgba(255,255,255,.1) inset; }
+    .edge-tape{
+      position:absolute; width:60px; height:18px; background:linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.3));
+      box-shadow:0 8px 14px rgba(0,0,0,.3); transform:rotate(var(--trot, -8deg));
+      mix-blend-mode:screen; opacity:.85;
     }
+    .edge-tape.tl{ top:-10px; left:16px; --trot:-10deg }
+    .edge-tape.tr{ top:-12px; right:18px; --trot:6deg }
+    .edge-tape.bl{ bottom:-10px; left:22px; --trot:4deg }
+    .edge-tape.br{ bottom:-12px; right:12px; --trot:-6deg }
+
+    .caption{
+      position:absolute; left:8px; right:8px; bottom:6px; padding:6px 8px;
+      background: linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.7));
+      color:#f1f1f1; font-weight:600; letter-spacing:.02em; border-radius:6px;
+    }
+    .tag-chip{
+      display:inline-block; margin-right:6px; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:700;
+      background: rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2); backdrop-filter: blur(6px);
+    }
+
+    /* Bullet holes */
+    .holes::before, .holes::after { content:""; position:absolute; width:16px; height:16px; border-radius:50%; background:radial-gradient(circle at 40% 40%, #c4c4c4 0%, #222 55%, #000 70%); box-shadow: inset 0 0 12px rgba(255,255,255,.15), 0 0 10px rgba(0,0,0,.6); }
+    .holes::before{ top:8%; left:10%; transform:rotate(-12deg)}
+    .holes::after{ bottom:10%; right:8%; transform:rotate(8deg)}
 
     /* Lightbox */
     .lb-enter { animation: zoomIn .18s ease-out; }
     @keyframes zoomIn { from { transform: scale(.96); opacity:.2 } to { transform: scale(1); opacity:1 } }
+
+    /* Redacted bar */
+    .redacted{ background:#111; color:transparent; border-radius:2px; padding:0 6px; box-shadow:0 0 0 2px #111; }
+
+    /* Text buttons */
+    .btn-ghost{
+      background: rgba(255,255,255,.06); color:#fff; font-weight:600;
+      border:1px solid rgba(255,255,255,.2); border-radius:10px; padding:9px 14px;
+      transition: background .18s ease, border-color .18s ease, transform .08s ease;
+    }
+    .btn-ghost:hover{ background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.4); transform: translateY(-1px); }
+    .btn-solid{
+      display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px;
+      background: linear-gradient(90deg, #ff2f4f, #c62828 45%, #f6c945); color:#120a26; font-weight:800;
+      box-shadow:0 6px 18px rgba(255,47,79,.25);
+    }
   `}</style>
 );
 
@@ -192,7 +175,6 @@ function useOnScreen(options) {
   }, [options]);
   return [ref, visible];
 }
-
 function useKeyDown(handler) {
   useEffect(() => {
     const fn = (e) => handler(e);
@@ -200,7 +182,6 @@ function useKeyDown(handler) {
     return () => window.removeEventListener("keydown", fn);
   }, [handler]);
 }
-
 function useLocalStorage(key, initialValue) {
   const [val, setVal] = useState(() => {
     try {
@@ -217,182 +198,119 @@ function useLocalStorage(key, initialValue) {
 }
 
 /* =========================
-   3) DATA DUMMY (ganti pakai asetmu)
+   3) DATA DUMMY
    ========================= */
-const CATEGORIES = ["Semua", "Wisdom Park", "Malam", "Selfie", "Candid", "Outdoor", "Indoor", "Kenangan"];
+const CATEGORIES = ["Semua", "Malam", "Street", "Candid", "Indoor", "Outdoor", "Kenangan"];
 const TAG_COLORS = {
-  Malam: "#a78bfa",
-  "Wisdom Park": "#8b5cf6",
-  Selfie: "#fde68a",
-  Candid: "#fcd34d",
+  Malam: "#ff2f4f",
+  Street: "#f6c945",
+  Candid: "#45f6da",
   Outdoor: "#93c5fd",
   Indoor: "#fca5a5",
   Kenangan: "#86efac",
 };
-
 function makeItem(i, w = 800, h = 1000, extra = {}) {
-  // Contoh path lokal: 'img6.jpg' dsb
   const src = `img${(i % 20) + 6}.jpg`;
-  const alt = `Kenangan ${i + 1}`;
+  const alt = `Frame #${i + 1}`;
   const date = new Date(Date.now() - i * 86400000).toISOString();
   const tagSet = [
     CATEGORIES[1 + (i % (CATEGORIES.length - 1))],
-    i % 3 === 0 ? "Malam" : undefined,
+    i % 4 === 0 ? "Malam" : undefined,
     i % 5 === 0 ? "Kenangan" : undefined,
   ].filter(Boolean);
-  return {
-    id: i + 1,
-    src,
-    w,
-    h,
-    alt,
-    date,
-    tags: tagSet,
-    ...extra,
-  };
+  return { id: i + 1, src, w, h, alt, date, tags: tagSet, ...extra };
 }
-
 const ALL_ITEMS = Array.from({ length: 36 }).map((_, i) =>
   makeItem(i, 800 + ((i * 37) % 200), 800 + ((i * 47) % 320))
 );
 
 /* =========================
-   4) PARALLAX HEADER + LANTERNS
+   4) PARALLAX HEADER
    ========================= */
-function ParallaxHeader() {
+function Skyline() {
   const [y, setY] = useState(0);
   useEffect(() => {
-    const onScroll = () => setY(window.pageYOffset || 0);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const on = () => setY(window.scrollY || window.pageYOffset);
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
   }, []);
-  const layers = [
-    { className: "bg-night-sky", speed: 0 },
-    { className: "bg-stars", speed: 0.15 },
-    { className: "bg-mountains", speed: 0.3 },
-    { className: "bg-castle", speed: 0.45 },
-  ];
+  const Rain = useMemo(() =>
+    Array.from({ length: 160 }).map((_, i) => ({
+      left: Math.random() * 100,
+      dur: 0.7 + Math.random() * 0.9,
+      delay: Math.random() * -20,
+      scale: 0.8 + Math.random() * 1.2,
+      id: i,
+    })), []);
   return (
     <div className="relative h-[42vh] sm:h-[50vh] overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        {layers.map((l, idx) => (
-          <div
-            key={idx}
-            className={`absolute inset-0 ${l.className}`}
-            style={{ transform: `translateY(${y * l.speed}px)` }}
-            aria-hidden="true"
-          />
-        ))}
+        <div className="absolute inset-0 layer-a" style={{ transform: `translateY(${y * 0.05}px)` }} />
+        <div className="absolute inset-0 layer-b" style={{ transform: `translateY(${y * 0.1}px)` }} />
+        <div className="absolute inset-0 layer-c" style={{ transform: `translateY(${y * 0.15}px)` }} />
       </div>
-      <div className="absolute inset-0 -z-10">
-        <LanternField count={14} />
+      <div className="absolute inset-0 -z-5 pointer-events-none">
+        {Rain.map(d => <div key={d.id} className="drop" style={{ left: `${d.left}%`, animationDuration: `${d.dur}s`, animationDelay: `${d.delay}s`, transform: `scaleY(${d.scale})` }} />)}
       </div>
-      <div className="relative h-full grid place-items-center px-6 text-center">
-        <div>
-          <p className="text-sm sm:text-base text-yellow-300/85">Balairung Kenangan</p>
-          <h1 className="mt-2 text-4xl sm:text-5xl md:text-6xl font-serif-regal font-bold text-shadow-gold">
-            Galeri Kerajaan
-          </h1>
-          <p className="mt-3 text-yellow-100/80 max-w-2xl mx-auto">
-            Setiap lampion menyimpan cerita. Setiap potret adalah prasasti.
-          </p>
+      <div className="relative h-full grid place-items-center text-center px-6">
+        <div className="siren rounded-xl px-4 py-2 inline-block bg-[rgba(255,255,255,.06)] border border-white/10">
+          <span className="text-xs tracking-[0.3em] text-white/70 uppercase">The Family Archive</span>
         </div>
+        <h1 className="mt-3 text-4xl sm:text-5xl md:text-6xl font-black neon-red">FIKA • BIRTHDAY FILES</h1>
+        <p className="mt-2 text-white/80 max-w-2xl mx-auto">Foto-foto disusun seperti dossier. Jaga jarak, tapi nikmati senyumnya.</p>
       </div>
-    </div>
-  );
-}
-
-function LanternField({ count = 12 }) {
-  const seeds = useMemo(
-    () =>
-      Array.from({ length: count }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 20,
-        dur: 18 + Math.random() * 22,
-        scale: 0.25 + Math.random() * 0.55,
-      })),
-    [count]
-  );
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {seeds.map((s) => (
-        <div
-          key={s.id}
-          className="lantern-bg"
-          style={{
-            left: `${s.left}%`,
-            animationDuration: `${s.dur}s`,
-            animationDelay: `${s.delay}s`,
-            transform: `scale(${s.scale})`,
-          }}
-        />
-      ))}
+      <div className="sweep" />
     </div>
   );
 }
 
 /* =========================
-   5) FILTER BAR
+   5) FILTER BAR (no kotak, lebih “strip”)
    ========================= */
 function FilterBar({ query, setQuery, category, setCategory, total, onlyFav, setOnlyFav, sort, setSort }) {
   return (
     <div className="container-narrow -mt-8">
-      <div className="card p-4 sm:p-5 -mt-8 sm:-mt-10 relative z-10">
+      <div className="rounded-xl bg-[rgba(255,255,255,.06)] border border-white/10 px-4 sm:px-5 py-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          {/* Search */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-yellow-400/20">
-            <IconSearch className="w-5 h-5 text-yellow-200/80" />
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/40 border border-white/10">
+            <IconSearch className="w-5 h-5 text-white/70" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari judul/tag (mis. Malam, Wisdom)..."
-              className="bg-transparent outline-none text-yellow-100/90 placeholder-yellow-200/50 w-64 sm:w-80"
+              placeholder="Cari judul/tag (Malam, Street, ...)"
+              className="bg-transparent outline-none text-white/85 placeholder-white/40 w-64 sm:w-80"
               aria-label="Pencarian galeri"
             />
           </div>
-
-          {/* Right controls */}
           <div className="flex items-center gap-2">
             <button
-              className={`btn-ghost focus-ring ${onlyFav ? "ring-2 ring-yellow-400/70" : ""}`}
-              onClick={() => setOnlyFav((v) => !v)}
+              className={`btn-ghost ${onlyFav ? "ring-2 ring-red-500/60" : ""}`}
+              onClick={() => setOnlyFav(v => !v)}
               aria-pressed={onlyFav}
-              title="Tampilkan Favorit saja"
+              title="Favorit"
             >
-              <IconHeart className="w-5 h-5 inline-block mr-1" /> Favorit
+              <IconHeart className={`w-5 h-5 inline-block mr-1 ${onlyFav ? "text-red-400" : "text-white/80"}`} filled={onlyFav} /> Favorit
             </button>
-
             <div className="relative">
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className="btn-ghost focus-ring pr-8"
-                aria-label="Urutkan"
-              >
+              <select value={sort} onChange={(e) => setSort(e.target.value)} className="btn-ghost pr-8" aria-label="Urutkan">
                 <option value="latest">Terbaru</option>
                 <option value="oldest">Terlama</option>
                 <option value="az">A → Z</option>
                 <option value="za">Z → A</option>
               </select>
-              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-yellow-200/70">
+              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-white/70">
                 <IconFilter className="w-4 h-4" />
               </span>
             </div>
-
-            <span className="hidden sm:inline text-yellow-200/70 text-sm">
-              {total} foto
-            </span>
+            <span className="hidden sm:inline text-white/60 text-sm">{total} foto</span>
           </div>
         </div>
-
-        {/* Categories chips */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        {/* Categories strip */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           {CATEGORIES.map((c) => (
             <button
               key={c}
-              className={`chip ${category === c ? "active" : ""}`}
+              className={`px-3 py-1 rounded-full text-xs font-bold border ${category === c ? "bg-red-600 text-white border-red-600" : "bg-black/40 text-white/80 border-white/10"}`}
               onClick={() => setCategory(c)}
               aria-pressed={category === c}
             >
@@ -406,20 +324,22 @@ function FilterBar({ query, setQuery, category, setCategory, total, onlyFav, set
 }
 
 /* =========================
-   6) MASONRY GRID
+   6) MASONRY UTILS
    ========================= */
 function useMasonry(items, columns = 4) {
   return useMemo(() => {
     const cols = Array.from({ length: columns }, () => []);
-    items.forEach((it, i) => {
-      cols[i % columns].push(it);
-    });
+    items.forEach((it, i) => cols[i % columns].push(it));
     return cols;
   }, [items, columns]);
 }
 
-function GalleryCard({ item, onOpen, isFav, toggleFav }) {
+/* =========================
+   7) GALLERY ITEM: POLAROID (no boxes)
+   ========================= */
+function GalleryPolaroid({ item, onOpen, isFav, toggleFav }) {
   const [ref, visible] = useOnScreen({ threshold: 0.05 });
+  const rot = useMemo(() => (Math.random() * 10 - 5).toFixed(2) + "deg", []);
   const tiltRef = useRef(null);
 
   useEffect(() => {
@@ -431,11 +351,9 @@ function GalleryCard({ item, onOpen, isFav, toggleFav }) {
       const y = e.clientY - rect.top;
       const rx = ((y / rect.height) - 0.5) * -6;
       const ry = ((x / rect.width) - 0.5) * 8;
-      el.style.transform = `perspective(600px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.02)`;
+      el.style.transform = `rotate(var(--rot)) perspective(700px) rotateX(${rx}deg) rotateY(${ry}deg)`;
     }
-    function reset() {
-      el.style.transform = `perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)`;
-    }
+    function reset() { el.style.transform = `rotate(var(--rot))`; }
     el.addEventListener("mousemove", onMove);
     el.addEventListener("mouseleave", reset);
     return () => {
@@ -448,86 +366,60 @@ function GalleryCard({ item, onOpen, isFav, toggleFav }) {
     <div ref={ref} className="relative">
       <div
         ref={tiltRef}
-        className={`relative overflow-hidden rounded-lg border border-yellow-400/20 transition-all duration-300 will-change-transform ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+        className={`polaroid holes ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+        style={{ "--rot": rot }}
       >
+        {/* tapes */}
+        <span className="edge-tape tl" />
+        <span className="edge-tape tr" />
+        {/* image button */}
         <button
           onClick={() => onOpen(item)}
-          className="block w-full focus:outline-none focus:ring-2 focus:ring-yellow-400/60"
+          className="block w-full focus:outline-none"
           aria-label={`Buka ${item.alt}`}
         >
           <img
             src={item.src}
             alt={item.alt}
             className="w-full h-auto object-cover"
-            onError={(e) => {
-              e.currentTarget.src = `https://placehold.co/800x1000/0a0514/fcd34d?text=${encodeURIComponent(
-                item.alt
-              )}`;
-            }}
+            onError={(e) => { e.currentTarget.src = `https://placehold.co/800x1000/0b0a0f/ffffff?text=${encodeURIComponent(item.alt)}`; }}
           />
         </button>
-
-        {/* top overlay actions */}
-        <div className="absolute top-2 left-2 flex gap-2">
-          {item.tags?.slice(0, 2).map((t) => (
-            <span
-              key={t}
-              className="px-2 py-0.5 rounded-full text-xs font-semibold"
-              style={{
-                background: "rgba(255,255,255,.08)",
-                border: `1px solid ${TAG_COLORS[t] || "rgba(253,230,138,.28)"}`,
-                color: TAG_COLORS[t] || "#FDE68A",
-                backdropFilter: "blur(6px)",
-              }}
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-
-        <button
-          onClick={() => toggleFav(item.id)}
-          className="absolute top-2 right-2 p-2 rounded-full bg-black/40 hover:bg-black/55 transition-colors"
-          aria-label={isFav ? "Hapus dari favorit" : "Tambah ke favorit"}
-          title={isFav ? "Hapus favorit" : "Tambah favorit"}
-        >
-          <IconHeart className={`w-5 h-5 ${isFav ? "text-red-400" : "text-yellow-200/90"}`} filled={isFav} />
-        </button>
-
-        {/* caption */}
-        <div className="p-3 bg-gradient-to-t from-black/40 to-transparent text-yellow-100/90">
+        {/* caption strip */}
+        <div className="caption">
           <div className="flex items-center justify-between">
-            <p className="font-semibold">{item.alt}</p>
-            <p className="text-xs text-yellow-200/60">
-              {new Date(item.date).toLocaleDateString()}
-            </p>
+            <p className="font-semibold">{item.alt} <span className="redacted">████</span></p>
+            <p className="text-xs text-white/60">{new Date(item.date).toLocaleDateString()}</p>
+          </div>
+          <div className="mt-1">
+            {(item.tags || []).slice(0, 3).map(t => (
+              <span key={t} className="tag-chip" style={{ borderColor: TAG_COLORS[t] || "rgba(255,255,255,.25)", color: TAG_COLORS[t] || "#fff" }}>{t}</span>
+            ))}
           </div>
         </div>
+        {/* fav button floating */}
+        <button
+          onClick={() => toggleFav(item.id)}
+          className="absolute -top-3 -right-3 p-2 rounded-full bg-black/70 hover:bg-black/60 transition-colors"
+          aria-label={isFav ? "Hapus favorit" : "Tambah favorit"}
+          title={isFav ? "Hapus favorit" : "Tambah favorit"}
+        >
+          <IconHeart className={`w-5 h-5 ${isFav ? "text-red-400" : "text-white/80"}`} filled={isFav} />
+        </button>
+        <span className="edge-tape bl" />
+        <span className="edge-tape br" />
       </div>
     </div>
   );
 }
 
 /* =========================
-   7) LIGHTBOX
+   8) LIGHTBOX
    ========================= */
-function Lightbox({
-  items,
-  openIndex,
-  setOpenIndex,
-  favorites,
-  toggleFav,
-}) {
+function Lightbox({ items, openIndex, setOpenIndex, favorites, toggleFav }) {
   const escClose = useCallback(() => setOpenIndex(-1), [setOpenIndex]);
-  const prev = useCallback(
-    () => setOpenIndex((i) => (i <= 0 ? items.length - 1 : i - 1)),
-    [items.length, setOpenIndex]
-  );
-  const next = useCallback(
-    () => setOpenIndex((i) => (i >= items.length - 1 ? 0 : i + 1)),
-    [items.length, setOpenIndex]
-  );
+  const prev = useCallback(() => setOpenIndex(i => (i <= 0 ? items.length - 1 : i - 1)), [items.length, setOpenIndex]);
+  const next = useCallback(() => setOpenIndex(i => (i >= items.length - 1 ? 0 : i + 1)), [items.length, setOpenIndex]);
 
   useKeyDown((e) => {
     if (openIndex < 0) return;
@@ -542,30 +434,13 @@ function Lightbox({
   const [dragging, setDragging] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
 
-  const onWheel = (e) => {
-    e.preventDefault();
-    const z = Math.min(3, Math.max(1, zoom + (e.deltaY < 0 ? 0.1 : -0.1)));
-    setZoom(z);
-  };
-
-  const onMouseDown = (e) => {
-    if (zoom <= 1) return;
-    setDragging(true);
-    wrapRef.current.dataset.startX = e.clientX - pos.x;
-    wrapRef.current.dataset.startY = e.clientY - pos.y;
-  };
-  const onMouseMove = (e) => {
-    if (!dragging) return;
-    const nx = e.clientX - parseFloat(wrapRef.current.dataset.startX || 0);
-    const ny = e.clientY - parseFloat(wrapRef.current.dataset.startY || 0);
-    setPos({ x: nx, y: ny });
-  };
+  const onWheel = (e) => { e.preventDefault(); const z = Math.min(3, Math.max(1, zoom + (e.deltaY < 0 ? 0.1 : -0.1))); setZoom(z); };
+  const onMouseDown = (e) => { if (zoom <= 1) return; setDragging(true); wrapRef.current.dataset.sx = e.clientX - pos.x; wrapRef.current.dataset.sy = e.clientY - pos.y; };
+  const onMouseMove = (e) => { if (!dragging) return; const nx = e.clientX - parseFloat(wrapRef.current.dataset.sx || 0); const ny = e.clientY - parseFloat(wrapRef.current.dataset.sy || 0); setPos({ x: nx, y: ny }); };
   const onMouseUp = () => setDragging(false);
 
   useEffect(() => {
-    const stop = (e) => {
-      if (openIndex >= 0) e.preventDefault();
-    };
+    const stop = (e) => { if (openIndex >= 0) e.preventDefault(); };
     document.addEventListener("wheel", stop, { passive: false });
     return () => document.removeEventListener("wheel", stop);
   }, [openIndex]);
@@ -577,194 +452,107 @@ function Lightbox({
   const share = async () => {
     const url = window.location.href;
     try {
-      if (navigator.share) {
-        await navigator.share({ title: item.alt, text: item.alt, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        alert("Tautan disalin ke papan klip");
-      }
-    } catch {
-      // diam saja
-    }
+      if (navigator.share) await navigator.share({ title: item.alt, text: item.alt, url });
+      else { await navigator.clipboard.writeText(url); alert("Tautan disalin"); }
+    } catch { }
   };
-  const download = () => {
-    const a = document.createElement("a");
-    a.href = item.src;
-    a.download = item.alt.replace(/\s+/g, "_") + ".jpg";
-    a.click();
-  };
+  const download = () => { const a = document.createElement("a"); a.href = item.src; a.download = item.alt.replace(/\s+/g, "_") + ".jpg"; a.click(); };
 
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-black/80 lb-enter">
-      <div className="absolute inset-0" />
-
-      {/* Top bar */}
+      {/* top bar */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/10 border border-white/20 text-yellow-100">
-          <IconLantern className="w-4 h-4 text-yellow-300" />
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/10 border border-white/20 text-white/90">
+          <span className="text-xs tracking-widest uppercase text-white/60">File</span>
           <span className="text-sm">{item.alt}</span>
-          <span className="text-xs text-yellow-200/70">
-            • {new Date(item.date).toLocaleString()}
-          </span>
+          <span className="text-xs text-white/50">• {new Date(item.date).toLocaleString()}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => toggleFav(item.id)}
-            className="p-2 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-            aria-label={isFav ? "Hapus favorit" : "Tambah favorit"}
-            title="Favorit (F)"
-          >
-            <IconHeart className={`w-5 h-5 ${isFav ? "text-red-400" : "text-yellow-200/90"}`} filled={isFav} />
+          <button onClick={() => toggleFav(item.id)} className="p-2 rounded-md bg-white/10 hover:bg-white/20 transition-colors" aria-label={isFav ? "Hapus favorit" : "Tambah favorit"} title="Favorit (F)">
+            <IconHeart className={`w-5 h-5 ${isFav ? "text-red-400" : "text-white/85"}`} filled={isFav} />
           </button>
-          <button onClick={share} className="p-2 rounded-md bg-white/10 hover:bg-white/20" aria-label="Bagikan">
-            <IconShare />
-          </button>
-          <button onClick={download} className="p-2 rounded-md bg-white/10 hover:bg-white/20" aria-label="Unduh">
-            <IconDownload />
-          </button>
-          <button
-            onClick={escClose}
-            className="p-2 rounded-md bg-white/10 hover:bg-white/20"
-            aria-label="Tutup lightbox"
-          >
-            <IconClose />
-          </button>
+          <button onClick={share} className="p-2 rounded-md bg-white/10 hover:bg-white/20" aria-label="Bagikan"><IconShare /></button>
+          <button onClick={download} className="p-2 rounded-md bg-white/10 hover:bg-white/20" aria-label="Unduh"><IconDownload /></button>
+          <button onClick={escClose} className="p-2 rounded-md bg-white/10 hover:bg-white/20" aria-label="Tutup"><IconClose /></button>
         </div>
       </div>
 
-      {/* Image area */}
+      {/* image */}
       <div
         ref={wrapRef}
         className={`relative max-w-6xl w-full px-4 select-none ${dragging ? "cursor-grabbing" : zoom > 1 ? "cursor-grab" : "cursor-default"}`}
-        onWheel={onWheel}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
+        onWheel={onWheel} onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
       >
         <img
           src={item.src}
           alt={item.alt}
           className="w-full max-h-[80vh] object-contain mx-auto"
           style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${zoom})`, transition: dragging ? "none" : "transform .15s ease-out" }}
-          onError={(e) => {
-            e.currentTarget.src = `https://placehold.co/1200x800/0a0514/fcd34d?text=${encodeURIComponent(
-              item.alt
-            )}`;
-          }}
+          onError={(e) => { e.currentTarget.src = `https://placehold.co/1200x800/0b0a0f/ffffff?text=${encodeURIComponent(item.alt)}`; }}
         />
       </div>
 
-      {/* Controls bottom */}
+      {/* bottom controls */}
       <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-3">
-        <button
-          onClick={prev}
-          className="btn-ghost focus-ring inline-flex items-center gap-2"
-          aria-label="Sebelumnya"
-          title="Sebelumnya (←)"
-        >
-          <IconChevronLeft />
-          Prev
-        </button>
+        <button onClick={prev} className="btn-ghost" aria-label="Sebelumnya" title="Sebelumnya (←)"><IconChevronLeft />Prev</button>
         <ZoomControl zoom={zoom} setZoom={setZoom} />
         <SlideshowButton items={items} openIndex={openIndex} setOpenIndex={setOpenIndex} />
-        <button
-          onClick={next}
-          className="btn-ghost focus-ring inline-flex items-center gap-2"
-          aria-label="Berikutnya"
-          title="Berikutnya (→)"
-        >
-          Next
-          <IconChevronRight />
-        </button>
+        <button onClick={next} className="btn-ghost" aria-label="Berikutnya" title="Berikutnya (→)">Next<IconChevronRight /></button>
       </div>
     </div>
   );
 }
-
 function ZoomControl({ zoom, setZoom }) {
   return (
-    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-white/10 border border-white/20 text-yellow-100">
-      <button className="btn-ghost" onClick={() => setZoom((z) => Math.max(1, +(z - 0.25).toFixed(2)))}>
-        -
-      </button>
+    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-white/10 border border-white/20 text-white/90">
+      <button className="btn-ghost" onClick={() => setZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))}>-</button>
       <span className="min-w-[3ch] text-center">{zoom.toFixed(2)}x</span>
-      <button className="btn-ghost" onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))}>
-        +
-      </button>
-      <button className="btn-ghost" onClick={() => setZoom(1)}>
-        Reset
-      </button>
+      <button className="btn-ghost" onClick={() => setZoom(z => Math.min(3, +(z + 0.25).toFixed(2)))}>+</button>
+      <button className="btn-ghost" onClick={() => setZoom(1)}>Reset</button>
     </div>
   );
 }
-
 function SlideshowButton({ items, openIndex, setOpenIndex, interval = 2200 }) {
   const [play, setPlay] = useState(false);
   useEffect(() => {
     if (!play) return;
-    const id = setInterval(() => {
-      setOpenIndex((i) => (i >= items.length - 1 ? 0 : i + 1));
-    }, interval);
+    const id = setInterval(() => { setOpenIndex(i => (i >= items.length - 1 ? 0 : i + 1)); }, interval);
     return () => clearInterval(id);
   }, [play, items.length, interval, setOpenIndex]);
   return (
-    <button
-      onClick={() => setPlay((v) => !v)}
-      className="btn-solid focus-ring"
-      aria-pressed={play}
-      title="Putar Slide"
-    >
-      {play ? <IconPause /> : <IconPlay />}
-      {play ? "Pause" : "Play"}
+    <button onClick={() => setPlay(v => !v)} className="btn-solid" aria-pressed={play} title="Putar Slide">
+      {play ? <IconPause /> : <IconPlay />}{play ? "Pause" : "Play"}
     </button>
   );
 }
 
 /* =========================
-   8) MAIN GALLERY WRAPPER
+   9) MAIN GALLERY WRAPPER
    ========================= */
 function GallerySection() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Semua");
   const [onlyFav, setOnlyFav] = useState(false);
   const [sort, setSort] = useState("latest");
-  const [favorites, setFavorites] = useLocalStorage("galeri_fav_v1", []);
+  const [favorites, setFavorites] = useLocalStorage("galeri_mafia_fav_v1", []);
   const [openIndex, setOpenIndex] = useState(-1);
 
-  const toggleFav = (id) => {
-    setFavorites((list) =>
-      list.includes(id) ? list.filter((x) => x !== id) : [id, ...list]
-    );
-  };
+  const toggleFav = (id) => setFavorites((list) => (list.includes(id) ? list.filter((x) => x !== id) : [id, ...list]));
 
   const filtered = useMemo(() => {
     let data = [...ALL_ITEMS];
     if (category !== "Semua") data = data.filter((d) => d.tags?.includes(category));
     if (query.trim()) {
       const q = query.toLowerCase();
-      data = data.filter(
-        (d) =>
-          d.alt.toLowerCase().includes(q) ||
-          (d.tags || []).some((t) => t.toLowerCase().includes(q))
-      );
+      data = data.filter((d) => d.alt.toLowerCase().includes(q) || (d.tags || []).some((t) => t.toLowerCase().includes(q)));
     }
     if (onlyFav) data = data.filter((d) => favorites.includes(d.id));
     switch (sort) {
-      case "latest":
-        data.sort((a, b) => +new Date(b.date) - +new Date(a.date));
-        break;
-      case "oldest":
-        data.sort((a, b) => +new Date(a.date) - +new Date(b.date));
-        break;
-      case "az":
-        data.sort((a, b) => a.alt.localeCompare(b.alt));
-        break;
-      case "za":
-        data.sort((a, b) => b.alt.localeCompare(a.alt));
-        break;
-      default:
-        break;
+      case "latest": data.sort((a, b) => +new Date(b.date) - +new Date(a.date)); break;
+      case "oldest": data.sort((a, b) => +new Date(a.date) - +new Date(b.date)); break;
+      case "az": data.sort((a, b) => a.alt.localeCompare(b.alt)); break;
+      case "za": data.sort((a, b) => b.alt.localeCompare(a.alt)); break;
+      default: break;
     }
     return data;
   }, [category, query, onlyFav, favorites, sort]);
@@ -786,28 +574,24 @@ function GallerySection() {
   return (
     <section className="py-10">
       <FilterBar
-        query={query}
-        setQuery={setQuery}
-        category={category}
-        setCategory={setCategory}
+        query={query} setQuery={setQuery}
+        category={category} setCategory={setCategory}
         total={filtered.length}
-        onlyFav={onlyFav}
-        setOnlyFav={setOnlyFav}
-        sort={sort}
-        setSort={setSort}
+        onlyFav={onlyFav} setOnlyFav={setOnlyFav}
+        sort={sort} setSort={setSort}
       />
 
       <div className="container-narrow mt-6">
         {filtered.length === 0 ? (
-          <div className="card p-8 text-center text-yellow-100/80">
-            Tidak ada foto dengan kriteria tersebut.
+          <div className="rounded-xl bg-black/50 border border-white/10 p-8 text-center text-white/80">
+            Tidak ada foto sesuai kriteria. Coba longgarkan filter.
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
             {cols.map((col, cidx) => (
               <div key={cidx} className="flex flex-col gap-4">
                 {col.map((it) => (
-                  <GalleryCard
+                  <GalleryPolaroid
                     key={it.id}
                     item={it}
                     onOpen={openByItem}
@@ -833,53 +617,43 @@ function GallerySection() {
 }
 
 /* =========================
-   9) PAGE COMPONENT
+   10) PAGE
    ========================= */
 export default function Galeri() {
+  // Money rain optional
+  const bills = useMemo(() =>
+    Array.from({ length: 10 }).map((_, i) => ({
+      id: i, left: Math.random() * 100, dur: 6 + Math.random() * 4, delay: Math.random() * 0.8, rot: Math.random() * 60 - 30
+    })), []);
+
   return (
     <Fragment>
-      {/* Fonts */}
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Jost:wght@400;600&display=swap"
-      />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;600;700;800&display=swap" />
       <ThemeStyle />
-      <div className="majestic-bg text-white font-sans min-h-screen">
-        {/* Header Parallax */}
-        <ParallaxHeader />
+      <div className="noir-bg text-white font-[Manrope] min-h-screen grain relative">
+        {/* header */}
+        <Skyline />
 
-        {/* Body */}
-        <div className="relative z-10">
+        {/* subtle money rain */}
+        {bills.map(b => (
+          <div key={b.id} className="bill" style={{ left: b.left + '%', animationDuration: b.dur + 's', animationDelay: b.delay + 's', transform: `rotate(${b.rot}deg)` }} />
+        ))}
+
+        {/* body */}
+        <div className="relative z-[1]">
           <div className="container-narrow px-4">
-            <div className="mt-6 mb-2 flex items-center gap-2 text-yellow-200/80">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-md"
-                style={{
-                  background:
-                    "radial-gradient(50% 50% at 50% 50%, rgba(251,191,36,.18), rgba(251,191,36,0))",
-                  boxShadow: "0 0 12px rgba(251,191,36,.35)",
-                }}
-              >
-                <IconCrown className="w-4 h-4 text-yellow-300" />
-              </span>
-              <span className="text-sm">Balairung Kenangan • Kerajaan Lampion</span>
+            <div className="mt-6 mb-2 flex items-center gap-2 text-white/80">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-white/10 border border-white/10">♠️</span>
+              <span className="text-sm">Family Files • Keep it quiet</span>
             </div>
           </div>
-
           <GallerySection />
         </div>
 
-        {/* Footer mini */}
-        <footer className="text-center py-12 px-6 border-t border-yellow-400/10 mt-16">
-          <IconLantern className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-          <p className="text-yellow-200/70 text-lg">
-            Semoga lampion-lampion harapan ini menerangi jalanmu,
-          </p>
-          <p className="text-2xl font-serif-regal font-bold text-white mt-2">
-            Galeri Kerajaan
-          </p>
-          <p className="text-yellow-200/50 mt-4">
-            &copy; {new Date().getFullYear()} - Dari Rajamu, ADE7.
-          </p>
+        {/* footer */}
+        <footer className="text-center py-10 px-6 border-t border-white/10 mt-12">
+          <p className="text-white/70 text-lg">Selamat ulang tahun, FIKA. Simpan foto yang bikin kamu tersenyum. Sisanya biar kota yang bising ini lupa.</p>
+          <p className="text-white/50 mt-2">© {new Date().getFullYear()} — Prepared by Arya.</p>
         </footer>
       </div>
     </Fragment>
@@ -887,9 +661,8 @@ export default function Galeri() {
 }
 
 /* ===================================================================================
-   10) Catatan kecil:
-   - Ganti src gambar di ALL_ITEMS dengan asetmu sendiri.
-   - Jika mau integrasi lazy-loading <img>, bisa tambahkan loading="lazy".
-   - Tailwind opsional; kelas dasar tetap jalan dengan CSS inline yang ada.
-   - Komponen aman dipakai di route /galeri tanpa dependensi eksternal.
+   Catatan:
+   - Ganti `img*.jpg` dengan asetmu.
+   - Tidak ada “kotak card”: tiap item adalah polaroid organik dengan tape & tepi tidak rata.
+   - Semua fitur dari versi sebelumnya tetap, tapi estetika full mafia/noir.
    =================================================================================== */
